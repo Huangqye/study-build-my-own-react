@@ -21,7 +21,7 @@
         return {
           type,
           props: {
-            props, // 因为props自带一层所以要结构掉
+            ...props, // 因为props自带一层所以要结构掉
             children: children.map((child) =>
               typeof child === "object" ? child : createTextElement(child)
             ),
