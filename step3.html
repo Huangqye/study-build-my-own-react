@@ -38,7 +38,7 @@
           },
         };
       }
-
+      // 第二步
       function render(element, container) {
         const dom =
           element.type === "TEXT_ELEMENT"
@@ -60,6 +60,30 @@
         createElement,
         render,
       };
+
+      /**
+       *  第三步: 处理并发
+       *  假设元素树很大很大的时候，可能会阻塞浏览器主线程太久，用户光等不能在页面上做别的事情就会影响其心情
+       *  所以要把工作拆分成小单元，每完成一个小单元之后，看看浏览器是否接到别的更重要的事情，有就中断渲染
+       *  requestIdleCallback就是看浏览器空闲了没
+       */
+
+      let nextUnitOfWork = null;
+
+      function workLoop(deadline) {
+        // 可以干活了
+        let shouldYield = false;
+        while (nextUnitOfWork && !shouldYield) {
+          // 干活了
+          nextUnitOfWork = performUnitWork(nextUnitOfWork);
+          // 每搞定一个单元就看看浏览器空不空
+          shouldYield = deadline.timeRemaining() < 1;
+        }
+        requestIdleCallback(workLoop);
+      }
+      requestIdleCallback(workLoop);
+
+      function performUnitWork(nextUnitOfWork) {}
 
       /** @jsx MyReact.createElement */
       const element = (
