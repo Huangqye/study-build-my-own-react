@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react/16.8.0/cjs/react.production.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react/16.8.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/babel-standalone/6.26.0/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      /**
+       *  第一步:实现createElement的功能，jsx转为js
+       *  type 元素标签
+       *  props 元素属性
+       *  children 会有N个子元素所以是数组，用到了 ..rest 剩余参数语法
+       */
+      function createElement(type, props, ...children) {
+        return {
+          type,
+          props: {
+            ...props, // 因为props自带一层所以要结构掉
+            children: children.map((child) =>
+              typeof child === "object" ? child : createTextElement(child)
+            ),
+          },
+        };
+      }
+      // 处理基本数据类型转为对象
+      function createTextElement(text) {
+        return {
+          type: "TEXT_ELEMENT",
+          props: {
+            nodeValue: text,
+            children: [],
+          },
+        };
+      }
+
+      function render(element, container) {
+        const dom =
+          element.type === "TEXT_ELEMENT"
+            ? document.createTextNode("")
+            : document.createElement(element.type);
+        // 元素属性分配给节点
+        const isProperty = (key) => key !== "children";
+        Object.keys(element.props)
+          .filter(isProperty)
+          .map((name) => {
+            return (dom[name] = element.props[name]);
+          });
+        // 递归子元素
+        element.props.children.map((child) => render(child, dom));
+        container.appendChild(dom);
+      }
+
+      const MyReact = {
+        createElement,
+        render,
+      };
+
+      /** @jsx MyReact.createElement */
+      const element = (
+        <div style="background: salmon">
+          <h1>Hello World</h1>
+          <h2 style="text-align:right">from Didact</h2>
+        </div>
+      );
+
+      const container = document.getElementById("root");
+      MyReact.render(element, container);
+    </script>
+  </body>
+</html>
