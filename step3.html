@@ -11,12 +11,6 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      /**
-       *  第一步:实现createElement的功能，jsx转为js
-       *  type 元素标签
-       *  props 元素属性
-       *  children 会有N个子元素所以是数组，用到了 ..rest 剩余参数语法
-       */
       function createElement(type, props, ...children) {
         return {
           type,
@@ -28,7 +22,6 @@
           },
         };
       }
-      // 处理基本数据类型转为对象
       function createTextElement(text) {
         return {
           type: "TEXT_ELEMENT",
@@ -38,7 +31,6 @@
           },
         };
       }
-      // 第二步
       function render(element, container) {
         const dom =
           element.type === "TEXT_ELEMENT"
@@ -48,9 +40,7 @@
         const isProperty = (key) => key !== "children";
         Object.keys(element.props)
           .filter(isProperty)
-          .map((name) => {
-            return (dom[name] = element.props[name]);
-          });
+          .map((name) => (dom[name] = element.props[name]));
         // 递归子元素
         element.props.children.map((child) => render(child, dom));
         container.appendChild(dom);

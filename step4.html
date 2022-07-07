@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title></title>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react/16.8.0/cjs/react.production.min.js"></script>
+    <script src="https://cdn.bootcdn.net/ajax/libs/react/16.8.0/umd/react.production.min.js"></script>
+    <script src="https://cdn.staticfile.org/babel-standalone/6.26.0/babel.min.js"></script>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      function createElement(type, props, ...children) {
+        return {
+          type,
+          props: {
+            ...props, // 因为props自带一层所以要结构掉
+            children: children.map((child) =>
+              typeof child === "object" ? child : createTextElement(child)
+            ),
+          },
+        };
+      }
+      function createTextElement(text) {
+        return {
+          type: "TEXT_ELEMENT",
+          props: {
+            nodeValue: text,
+            children: [],
+          },
+        };
+      }
+      // 注意这里传的element是div
+      function render(element, container) {
+        // fiber root
+        nextUnitOfWork = {
+          dom: container,
+          props: {
+            children: [element],
+          },
+        };
+      }
+
+      let nextUnitOfWork = null;
+
+      function workLoop(deadline) {
+        // 可以干活了
+        let shouldYield = false;
+        while (nextUnitOfWork && !shouldYield) {
+          // 干活了
+          nextUnitOfWork = performUnitWork(nextUnitOfWork);
+          shouldYield = deadline.timeRemaining() < 1;
+          // 每搞定一个单元就看看浏览器空不空
+        }
+        requestIdleCallback(workLoop);
+      }
+      requestIdleCallback(workLoop);
+
+      /**
+       * 第四步 fiber
+       * 每一个元素就是一个fiber
+       * fiber会有child,sibling和parent，是为了容易查找到下一个工作单元
+       * 优先找child 再是sibling 最后是parent
+       * performUnitWork  一次处理一个单元
+       */
+      function performUnitWork(fiber) {
+        // 上来就是创建节点并附加到dom
+        if (!fiber.dom) {
+          fiber.dom = createDom(fiber);
+        }
+
+        if (fiber.parent) {
+          fiber.parent.dom.appendChild(fiber.dom);
+        }
+        // 开始造children的fiber 牢记createElement的结构
+        const elements = fiber.props.children;
+        let index = 0;
+        let prevSibling = null;
+
+        while (index < elements.length) {
+          const element = elements[index];
+
+          const newFiber = {
+            type: element.type,
+            props: element.props,
+            parent: fiber,
+            dom: null,
+          };
+          // 壮大fiber树
+          // 区别是子节点还是兄弟节点
+          if (index === 0) {
+            fiber.child = newFiber; // div => h1 => p
+          } else {
+            prevSibling.sibling = newFiber; // h2 => a
+          }
+          prevSibling = newFiber; // h1 => p
+          index++;
+        }
+        // 打印一下fiber就能辅助看清逻辑
+        // console.log("fiber", fiber);
+        if (fiber.child) {
+          return fiber.child;
+        }
+
+        let nextFiber = fiber;
+        while (nextFiber) {
+          if (nextFiber.sibling) {
+            return nextFiber.sibling;
+          }
+          nextFiber = nextFiber.parent;
+        }
+      }
+
+      function createDom(fiber) {
+        const dom =
+          element.type === "TEXT_ELEMENT"
+            ? document.createTextNode("")
+            : document.createElement(element.type);
+        // 元素属性分配给节点
+        const isProperty = (key) => key !== "children";
+        Object.keys(element.props)
+          .filter(isProperty)
+          .map((name) => (dom[name] = element.props[name]));
+        return dom;
+      }
+
+      const MyReact = {
+        createElement,
+        render,
+      };
+
+      /** @jsx MyReact.createElement */
+      const element = (
+        <div>
+          <h1>
+            <p />
+            <a />
+          </h1>
+          <h2 />
+        </div>
+      );
+
+      const container = document.getElementById("root");
+      MyReact.render(element, container);
+    </script>
+  </body>
+</html>

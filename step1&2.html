@@ -48,9 +48,7 @@
         const isProperty = (key) => key !== "children";
         Object.keys(element.props)
           .filter(isProperty)
-          .map((name) => {
-            return (dom[name] = element.props[name]);
-          });
+          .map((name) => (dom[name] = element.props[name]));
         // 递归子元素
         element.props.children.map((child) => render(child, dom));
         container.appendChild(dom);
